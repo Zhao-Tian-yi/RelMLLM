@@ -1,0 +1,12 @@
+RelMLLM
+Copyright 2026 RelMLLM Authors
+
+This distribution contains a derivative of Qwen3-VL-Instruct, developed by
+the Qwen team at Alibaba Cloud. Qwen3-VL is licensed under the Apache License,
+Version 2.0. The upstream project is available at:
+https://github.com/QwenLM/Qwen3-VL
+
+The RGB-T datasets used to train and evaluate RelMLLM are not included in
+this distribution. Their original licenses and terms remain with their
+respective owners.
+
