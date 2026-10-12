@@ -142,13 +142,19 @@ def grouped(rows: list[dict[str, Any]], field: str) -> dict[str, dict[str, float
 
 def write_report(path: Path, rows: list[dict[str, Any]]) -> None:
     groups = grouped(rows, "data_type")
+    group_macro = {}
+    for group in ("Single RGB Image", "RGB-Thermal Pair"):
+        subset = [row for row in rows if row["data_type"] == group]
+        skills = grouped(subset, "skill_type")
+        group_macro[group] = sum(float(value["accuracy"]) for value in skills.values()) / len(skills) if skills else None
     summary = {
         "accuracy": mean(rows, "correct"),
         "valid_rate": mean(rows, "valid"),
         "n": len(rows),
         "by_data_type": groups,
-        "macro_qacc": sum(float(group["accuracy"]) for group in groups.values()) / len(groups) if len(groups) == 2 else None,
-        "macro_qacc_note": "Equal average of the two data-type groups; merge all shards before headline scoring",
+        "macro_qacc": sum(group_macro.values()) / 2 if all(value is not None for value in group_macro.values()) else None,
+        "macro_qacc_by_data_type": group_macro,
+        "macro_qacc_note": "Macro over skill within each data type, then equal average of both types; merge all shards before headline scoring",
         "by_source": grouped(rows, "data_source"),
         "by_skill_type": grouped(rows, "skill_type"),
     }

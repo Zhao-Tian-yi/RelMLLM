@@ -14,9 +14,11 @@
 - [x] Author-approved recovered checkpoint version selected; no diagnostic adapters.
 - [x] Original complete model files verified for both sizes.
 - [x] Complete four-dataset recovered metrics compared with paper, discrepancies disclosed.
-- [x] Five CPU unit tests passed in the recovered runtime.
+- [x] Six CPU unit tests passed in the recovered runtime.
 - [x] Official dataset access links and custom selector/cache availability gaps documented.
 - [x] Private source defaults removed from evaluation scripts; no credentials embedded.
+- [x] Both models' complete archived predictions independently rescored with matching results.
+- [x] Public RelMLLM-4B configuration, tokenizer and processor loaded successfully.
 - [ ] Hugging Face upload revisions and verification recorded.
 
 No fresh GPU inference or end-to-end public download smoke is claimed here.

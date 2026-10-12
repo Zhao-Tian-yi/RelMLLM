@@ -32,7 +32,8 @@ Shared RGB/TIR ground truth is not independent TIR annotation under misalignment
 Extract locally and pass the directory containing `questions.json` files to
 `tools/evaluate_rgbth.py --dataset_root`. Archived input: 1,044 RGB-Txt and 812
 RGB-Thermal-Txt queries (1,856 total). Confirm this version/count before comparison.
-Headline macro QAcc equally averages the two group accuracies, not all samples.
+Headline QAcc first averages skill accuracies within each data type, then
+equally averages the two type scores. It is not a sample-weighted micro average.
 
 ## DV-1K-Balanced
 

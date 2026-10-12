@@ -88,6 +88,9 @@ pip install -r requirements.txt
 
 The tested environment used PyTorch 2.10.0, Transformers 5.4.0,
 Accelerate 1.13.0, Safetensors 0.7.0, and Pillow 12.2.0.
+For the recovered evaluation environment, install
+`pip install -r requirements-reproduction.txt` instead of the broad dependency
+ranges. Select a PyTorch build compatible with your CUDA/driver installation.
 
 ## RGB-T grounding
 

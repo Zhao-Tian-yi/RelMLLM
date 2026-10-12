@@ -115,8 +115,8 @@ def parse_args() -> argparse.Namespace:
         choices=["paper", "relation-state"],
         default="paper",
         help=(
-            "paper: relation-state grounding and direct Yes/No VQA, matching the "
-            "reported evaluations; relation-state: structured output for both tasks."
+            "paper: relation-state grounding and generic direct Yes/No VQA; "
+            "relation-state: structured output for both tasks. Benchmark VQA uses tools/."
         ),
     )
     parser.add_argument("--rgb", required=True, help="Path to the RGB image.")

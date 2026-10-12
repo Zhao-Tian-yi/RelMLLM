@@ -31,7 +31,8 @@ or fenced responses and validates box ordering, not all strict finite/range
 constraints. `format_ok` is legacy parser validity, not strict geometry validity.
 The generic VQA example is not the benchmark-specific prompt. DV-1K includes
 counts; an obsolete all-yes/no run is excluded. RGB-Th headline is the equal
-average of RGB-Txt and RGB-Thermal-Txt accuracies, not the micro average.
+average of RGB-Txt and RGB-Thermal-Txt scores, each macro-averaged over skills,
+not the sample-weighted micro average.
 
 See [DATASETS.md](DATASETS.md) for custom-selector/cache availability gaps.
 Training data and training code are not included. This is an inference and

@@ -1,6 +1,8 @@
 import importlib.util
 import sys
 import unittest
+import json
+import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -10,6 +12,7 @@ from inference import extract_json, normalized_to_pixels, build_messages
 from PIL import Image
 from evaluate_grounding import iou_xyxy, valid_bbox
 from evaluate_dv1k import answer_type, normalize_answer, score_answer
+from evaluate_rgbth import write_report
 
 
 class ReleaseTests(unittest.TestCase):
@@ -42,6 +45,20 @@ class ReleaseTests(unittest.TestCase):
         self.assertEqual(kind, "count")
         value = normalize_answer("2", kind)
         self.assertEqual(score_answer(value, value, kind), 1)
+
+    def test_rgbth_nested_macro(self):
+        rows = []
+        for kind, skill, values in [("Single RGB Image", "A", [1, 1, 1]),
+                                    ("Single RGB Image", "B", [0]),
+                                    ("RGB-Thermal Pair", "A", [1]),
+                                    ("RGB-Thermal Pair", "B", [1])]:
+            rows.extend({"data_type": kind, "skill_type": skill, "correct": value,
+                         "valid": 1, "data_source": "synthetic"} for value in values)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "report.md"
+            write_report(path, rows)
+            summary = json.loads(path.with_suffix(".json").read_text())["summary"]
+            self.assertEqual(summary["macro_qacc"], .75)
 
 
 if __name__ == "__main__":
