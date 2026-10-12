@@ -9,9 +9,18 @@ the archived release version. They are not later diagnostic adapters.
 Weights: [RelMLLM-4B](https://huggingface.co/tyy1850819840/RelMLLM-4B) and
 [RelMLLM-8B](https://huggingface.co/tyy1850819840/RelMLLM-8B).
 Hosting verification is tracked in [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md).
-Weight hosting is in progress until that checklist records successful public
-upload verification. Complete archived evaluation summary:
+Both checkpoints are now publicly hosted. Complete archived evaluation summary:
 [machine-readable results](reports/recovered_four_dataset_summary.json).
+Public loading checks: [release record](reports/public_model_release.json).
+
+To download the fixed recovered release rather than a future `main` update:
+
+```bash
+hf download tyy1850819840/RelMLLM-8B --revision recovered-20261012 --local-dir RelMLLM-8B
+# Use --model ./RelMLLM-8B for inference with this fixed local version.
+```
+
+The same release tag is available for RelMLLM-4B.
 
 ### Complete Archived Results
 
@@ -98,7 +107,7 @@ The RGB image must be passed first and the aligned TIR image second.
 
 ```bash
 python inference.py \
-  --model /path/to/RelMLLM-8B \
+  --model tyy1850819840/RelMLLM-8B \
   --task grounding \
   --rgb examples/rgb.jpg \
   --tir examples/tir.jpg \
@@ -113,7 +122,7 @@ coordinates, add `--pixel-bbox`.
 
 ```bash
 python inference.py \
-  --model /path/to/RelMLLM-8B \
+  --model tyy1850819840/RelMLLM-8B \
   --task vqa \
   --rgb examples/rgb.jpg \
   --tir examples/tir.jpg \
