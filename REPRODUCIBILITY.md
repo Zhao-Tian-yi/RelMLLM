@@ -1,9 +1,9 @@
 # Recovered Checkpoint Reproduction
 
 The author-approved release contains recovered merged BF16 RelMLLM-4B / 8B,
-not the later coordinate-binding step120 adapters. A fresh full-file SHA256
-check passed the recovered manifests (13 entries / 15 entries). Hash agreement
-establishes file identity, not exact equality to every paper number.
+not the later coordinate-binding step120 adapters. The released files were
+checked against the recovered version. Version agreement does not establish
+exact equality to every paper number.
 
 | Model | GroundBench Acc@0.5 | RGB-Th macro QAcc | Degraded-1K Acc@0.5 | DV-1K Acc |
 |---|---:|---:|---:|---:|

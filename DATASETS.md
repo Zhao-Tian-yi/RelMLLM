@@ -47,12 +47,6 @@ and `HDRT/infrared` under your local data directory.
 The custom 1,000-query set combines 500 DV500 RGB-category examples and 500
 held-out IR-category examples from v1 source data (297 LLVIP / 203 HDRT).
 Archived seed: 20260718, first QA only. It is not the upstream DV500 alone.
-Source SHA256:
-
-```text
-train.json  cfce5f2a89d6b87232c394eb0d410e3e062b8fd06c6f59c16e92b038e499e061
-dv500.jsonl 1824cda92cc819d5c9c1b1c0849be5e96ca9dc2b741b75044767af57fd5e5baf
-```
 
 Seed alone does not define ordered eligibility or held-out filtering. The exact
 sanitized selector is not yet distributed: full independent reconstruction is
@@ -64,7 +58,7 @@ That convention is not a ground-truth-blind deployment protocol.
 
 This custom GroundBench-derived cache contains 333 RGB-degraded, 333 TIR-degraded,
 and 334 both-degraded queries. There is no verified standalone public download
-yet. Exact selection, corruption parameters and cached-image hashes remain to
+yet. Exact selection, corruption parameters and cached images remain to
 be released. GroundBench alone or an arbitrary corruption does not reconstruct
 these scores. Reported values are archived recovered-checkpoint evaluations,
 not a claim that the custom dataset is already publicly reproducible.

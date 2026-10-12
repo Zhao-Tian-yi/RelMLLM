@@ -3,14 +3,14 @@
 ## Recovered Checkpoint Release (2026-10-12)
 
 This is an **inference/evaluation release**, not a complete training release.
-The author-approved recovered merged BF16 checkpoints passed full-file SHA256
-verification (4B: 13 manifest entries; 8B: 15). They are not later diagnostic adapters.
+The author-approved recovered merged BF16 checkpoints have been checked against
+the archived release version. They are not later diagnostic adapters.
 
 Weights: [RelMLLM-4B](https://huggingface.co/tyy1850819840/RelMLLM-4B) and
 [RelMLLM-8B](https://huggingface.co/tyy1850819840/RelMLLM-8B).
 Hosting verification is tracked in [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md).
 Weight hosting is in progress until that checklist records successful public
-file/hash verification. Complete archived evaluation summary:
+upload verification. Complete archived evaluation summary:
 [machine-readable results](reports/recovered_four_dataset_summary.json).
 
 ### Complete Archived Results
