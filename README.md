@@ -4,7 +4,8 @@ Code for **Beyond Paired Inputs: Learning to Leverage RGB-T Cross-Modal
 Relations in Multimodal Large Language Models**.
 
 A minimal repository for paired RGB/TIR inference, benchmark evaluation, and
-relation-supervised LoRA SFT. Inputs are RGB first, TIR second. Grounding uses
+relation-guided reinforcement learning (GSPO), with optional SFT warm-up.
+Inputs are RGB first, TIR second. Evaluation grounding uses
 single-image `[x1,y1,x2,y2]` coordinates normalized to 0..1000.
 
 ## Install and Download
@@ -97,43 +98,132 @@ paper number. The Degraded-1K differences are +5.50 / -1.30 points; their cause
 has not been established. Custom input availability also limits independent
 reproduction of these archived scores.
 
-## Training
+## Relation-Guided RL
 
-`train.py` adapts the historical relation-SFT trainer, with input validation and
-assistant-only loss. It uses paired M-RoPE and all-linear LoRA. It is a runnable
-SFT component, **not the complete recipe that produced the released checkpoints**.
-The historical training-data construction and complete post-training settings
-are not yet packaged. The settings below are script defaults, not a verified
-paper-training recipe. No later coordinate-binding adapters are used here.
+`train.py` is adapted from the AAAI supplementary `train_relation_gspo.py`, not
+from later coordinate-binding experiments. The final optimizer is **GSPO**:
+TRL's `GRPOTrainer` with `importance_sampling_level=sequence`, `loss_type=grpo`,
+and group reward scaling. A class name containing GRPO does not imply token-level
+GRPO. [TRL documentation](https://huggingface.co/docs/trl/v0.25.1/en/paper_index)
+explains this distinction.
 
-Supply training and held-out validation JSONL files, one conversation per line:
+The reward follows the paper's hierarchy:
+
+```text
+R = (1 - lambda_e) * ((1 - lambda_r) * R_task + lambda_r * R_rel)
+    + lambda_e * R_cons
+R_cons = 0.20 * R_step + 0.50 * R_match + 0.30 * R_dec
+R_dec = IoU * (0.5 + 0.5 * R_match)
+```
+
+The supplied full-method settings use `lambda_r=0.25` and `lambda_e=0.15`.
+`R_task` combines format, geometry and RGB-relative task utility at
+0.15/0.50/0.35, as in the supplementary implementation. `R_rel` checks the four
+state fields; `R_match` matches modality-evidence records. The historical
+`R_step` checks schema/type coverage, not strict serialized key/step order.
+The training reward accepts the better pixel/normalized box interpretation
+against GT; this is a training convention, **not the evaluation parser**.
+These details are preserved rather than silently changing the released method.
+
+### Relation Data
+
+Construct outcome-derived labels from RGB-only, TIR-only and paired candidate
+predictions. Existing complete predictions can be reused; no additional model
+inference is needed to run this builder:
+
+```bash
+python tools/build_relation_data.py --base_json /data/candidates.json \
+  --rgb_jsonl /data/rgb_predictions.jsonl --tir_jsonl /data/tir_predictions.jsonl \
+  --both_jsonl /data/paired_predictions.jsonl --output_dir /data/relation_5k
+```
+
+The builder selects 5,000 natural queries with seed 20260721, excluding controlled
+diagnostics. Each prediction row needs `sample_id`, `iou`, and `format_ok`.
+Base rows need `sample_id`, `case_type=both_advantage`, `rgb_path`, `tir_path`,
+`query`, pixel `bbox`, `image_size=[width,height]`, and
+`metadata.source_sample_id`. Candidate generation and exact source selection
+are not bundled; original serialized July candidate predictions were deleted,
+so regenerated annotations are not claimed identical to the originals.
+
+RL accepts a JSON array of records:
+
+```json
+[{"sample_id":"train-1","rgb_path":"images/rgb.jpg","tir_path":"images/tir.jpg",
+  "query":"the person","bbox":[10,20,100,200],"image_width":640,"image_height":480,
+  "rgb_reliability":"high","tir_reliability":"medium",
+  "relation":"complementary","dominant_modality":"RGB","rgb_baseline_iou":0.8}]
+```
+
+Use original-image **pixel** GT for training. Paths are absolute or relative to
+the JSON file. Supply a separate validation JSON array; duplicate/overlapping
+sample IDs, missing relation labels and incompatible image dimensions are rejected.
+Keep train and validation image content separate as well.
+
+### SFT Warm-Up
+
+`train_sft.py` provides the prerequisite schema-adaptation stage, not the final
+method. Supply JSONL conversations with assistant-only supervision:
 
 ```json
 {"images":["images/rgb.jpg","images/tir.jpg"],"messages":[{"role":"system","content":"Return strict JSON only."},{"role":"user","content":"Locate the person. Return a bbox normalized to 0..1000."},{"role":"assistant","content":"{\"bbox\":[100,200,300,800]}"}]}
 ```
 
-Image paths are absolute or relative to the JSONL file. Replace the example
-messages with your actual relation-supervision conversations and targets; the
-example defines the file format, not the historical 5K supervision. Keep
-validation images separate from training images. Check the inputs without loading
-the model, then train from the matching Qwen3-VL base:
+Replace example messages with relation-supervision conversations and targets;
+the example is only a file-format demonstration. Image paths are relative to
+the JSONL file or absolute. Supplementary warm-up settings are 600 steps at 3e-6:
 
 ```bash
-python train.py --train_jsonl /data/train.jsonl --eval_jsonl /data/val.jsonl \
-  --output_dir outputs/sft --dry_run
-
-python train.py --model_name_or_path Qwen/Qwen3-VL-8B-Instruct \
+pip install -r requirements-train.txt
+torchrun --standalone --nproc_per_node=2 train_sft.py \
+  --model_name_or_path Qwen/Qwen3-VL-8B-Instruct \
   --train_jsonl /data/train.jsonl --eval_jsonl /data/val.jsonl \
   --output_dir outputs/sft --bf16 --gradient_checkpointing \
-  --max_steps 120 --learning_rate 1e-5 --gradient_accumulation_steps 4 \
-  --lora_r 8 --lora_alpha 16 --seed 42 --merge_output_dir outputs/merged
+  --max_steps 600 --learning_rate 3e-6 --gradient_accumulation_steps 4 \
+  --lora_r 8 --lora_alpha 16 --lora_dropout 0.05 --seed 42 \
+  --save_steps 100 --eval_steps 100
 ```
 
-For 4B use `Qwen/Qwen3-VL-4B-Instruct`. The trainer saves a LoRA adapter in
-`outputs/sft/final_model`; the optional single-process merge exports a standalone
-model to `outputs/merged`. Evaluate it with the commands above, changing the
-model path. Nonempty output directories are refused unless explicitly resuming
-training. Run `python train.py --help` for all settings.
+### GSPO Training and Export
+
+Check data/reward wiring on CPU first, then run the paper-level one-epoch
+schedule on two BF16-capable GPUs. No synthetic degradation is used in training.
+
+```bash
+python train.py --train_json /data/relation_train.json --eval_json /data/relation_val.json \
+  --output_dir outputs/reward_check --dry_run_rewards
+
+torchrun --standalone --nproc_per_node=2 train.py \
+  --model_name_or_path Qwen/Qwen3-VL-8B-Instruct \
+  --adapter_path outputs/sft/final_model \
+  --train_json /data/relation_train.json --eval_json /data/relation_val.json \
+  --output_dir outputs/gspo --num_train_epochs 1 --learning_rate 1e-6 \
+  --per_device_train_batch_size 1 --gradient_accumulation_steps 4 \
+  --num_generations 4 --max_completion_length 1024 \
+  --lora_r 8 --lora_alpha 16 --lora_dropout 0.05 \
+  --relation_state_weight 0.25 --hgrpo_evidence_weight 0.15 \
+  --loss_type grpo --importance_sampling_level sequence --scale_rewards group --bf16
+
+python tools/merge_adapter.py --model Qwen/Qwen3-VL-8B-Instruct \
+  --adapter outputs/gspo/final_model --output outputs/merged
+```
+
+For 4B use `Qwen/Qwen3-VL-4B-Instruct` throughout. Evaluate `outputs/merged` with
+the benchmark commands above. Nonempty output directories are protected. RL
+records its configuration in the output directory. `--max_steps` explicitly
+overrides epoch scheduling; the supplementary shell used 1,250 steps, whereas
+the paper states one epoch. They must not be assumed equivalent across batch
+and generation settings. This release defaults to the paper's one epoch.
+
+The minimal RL implementation preserves the supplementary reward calculations;
+paths, validation, defaults and a historical single-sample multimodal logprob
+compatibility fix are adapted. The training prompt also removes the contradictory
+"BBox first" instruction in the supplement and serializes evidence, relation
+state, then final bbox as described in the paper. This prompt correction is not
+claimed identical to the historical training prompt. The upstream TRL revision is fixed in
+`requirements-train.txt`; the compatibility fix is local, not an upstream edit.
+CPU checks do not establish end-to-end retraining equivalence. Exact historical
+data, the step/epoch discrepancy and the full training-to-merged-weight chain
+still need verification before claiming exact recreation of the hosted weights.
 
 ## Tests and License
 

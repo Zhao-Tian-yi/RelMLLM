@@ -13,12 +13,62 @@ from PIL import Image
 from evaluate_grounding import iou_xyxy, valid_bbox
 from evaluate_dv1k import answer_type, normalize_answer, score_answer
 from evaluate_rgbth import write_report
-from train import RelationSFTDataset, RelationSFTCollator
+from train_sft import RelationSFTDataset, RelationSFTCollator
 import torch
 from types import SimpleNamespace
+from unittest.mock import patch
+import train as rl
+from relmllm.evidence_rewards import compute_hgrpo_modality_evidence_reward, final_evidence_consistency_reward
+from tools.build_relation_data import derive_label
 
 
 class ReleaseTests(unittest.TestCase):
+    def test_gspo_defaults(self):
+        with patch.object(sys, "argv", ["train.py", "--train_json", "train.json",
+                                      "--eval_json", "val.json", "--output_dir", "out"]):
+            args = rl.parse_args()
+        self.assertEqual((args.importance_sampling_level, args.loss_type, args.scale_rewards),
+                         ("sequence", "grpo", "group"))
+        self.assertEqual((args.num_generations, args.max_completion_length), (4, 1024))
+        self.assertEqual((args.num_train_epochs, args.max_steps), (1, -1))
+        self.assertEqual(args.learning_rate, 1e-6)
+
+    def test_hierarchical_reward_equation(self):
+        target = [10, 20, 100, 200]
+        output = {"bbox": target, "rgb_reliability": "high", "tir_reliability": "medium",
+                  "relation": "complementary", "dominant_modality": "RGB", "evidence": "target",
+                  "steps": [
+                      {"type": "rgb_evidence", "modality": "RGB", "bbox": target,
+                       "reliability": "high", "sub_answer": "RGB target evidence"},
+                      {"type": "tir_evidence", "modality": "TIR", "bbox": target,
+                       "reliability": "medium", "sub_answer": "TIR target evidence"},
+                      {"type": "relation_check", "modality": "RGB", "relation": "complementary",
+                       "sub_answer": "RGB TIR relation"}]}
+        parts = compute_hgrpo_modality_evidence_reward(output, target, "complementary", "high", "medium", "RGB", 640, 480)
+        self.assertAlmostEqual(parts["total"], .2 * parts["format"] + .5 * parts["hungarian"] + .3 * parts["final_consistency"])
+        geo, iou = rl.geometry_reward(output, target, 640, 480)
+        task = .15 * rl.format_reward(output) + .5 * geo + .35 * rl.relative_reward(iou, .8)
+        expected = .85 * (.75 * task + .25) + .15 * parts["total"]
+        actual = rl.bbox_relative_reward([None], [json.dumps(output)], [target], [640], [480], [.8],
+                                        ["complementary"], ["high"], ["medium"], ["RGB"])[0]
+        self.assertAlmostEqual(actual, expected)
+        output["bbox"] = [300, 300, 400, 400]
+        self.assertEqual(final_evidence_consistency_reward(output, target, 1, 640, 480), 0)
+
+    def test_relation_mining_rules(self):
+        def pred(iou):
+            return {"iou": iou, "format_ok": 1}
+        self.assertEqual(derive_label(pred(.8), pred(.05), pred(.1))["relation"], "conflict")
+        self.assertEqual(derive_label(pred(.1), pred(.1), pred(.8))["dominant_modality"], "Both")
+        self.assertEqual(derive_label(pred(.1), pred(.1), pred(.1))["relation"], "uncertain")
+
+    def test_rl_prompt_evidence_relation_decision_order(self):
+        text = rl.build_prompt({"query": "person", "image_width": 640, "image_height": 480})[1]["content"]
+        schema = text[text.index('{"steps"'):]
+        self.assertLess(schema.index('"steps"'), schema.index('"rgb_reliability"'))
+        self.assertLess(schema.index('"dominant_modality"'), schema.rindex('"bbox"'))
+        self.assertNotIn("BBox first", text)
+
     def test_training_data_validation(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
