@@ -1,31 +1,89 @@
 # RelMLLM
 
-## Recovered Checkpoint Release (2026-10-12)
+Code for **Beyond Paired Inputs: Learning to Leverage RGB-T Cross-Modal
+Relations in Multimodal Large Language Models**.
 
-This is an **inference/evaluation release**, not a complete training release.
-The author-approved recovered merged BF16 checkpoints have been checked against
-the archived release version. They are not later diagnostic adapters.
+A minimal repository for paired RGB/TIR inference, benchmark evaluation, and
+relation-supervised LoRA SFT. Inputs are RGB first, TIR second. Grounding uses
+single-image `[x1,y1,x2,y2]` coordinates normalized to 0..1000.
+
+## Install and Download
+
+Use Python 3.10 and a CUDA-compatible PyTorch installation.
+
+```bash
+pip install -r requirements.txt
+hf download tyy1850819840/RelMLLM-8B --revision recovered-20261012 --local-dir models/RelMLLM-8B
+```
 
 Weights: [RelMLLM-4B](https://huggingface.co/tyy1850819840/RelMLLM-4B) and
 [RelMLLM-8B](https://huggingface.co/tyy1850819840/RelMLLM-8B).
-Hosting verification is tracked in [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md).
-Both checkpoints are now publicly hosted. Complete archived evaluation summary:
-[machine-readable results](reports/recovered_four_dataset_summary.json).
-Public loading checks: [release record](reports/public_model_release.json).
+Both are merged BF16 checkpoints with the fixed `recovered-20261012` release
+tag. For 4B, replace both occurrences of `RelMLLM-8B` in the download command.
 
-To download the fixed recovered release rather than a future `main` update:
+## Inference
 
 ```bash
-hf download tyy1850819840/RelMLLM-8B --revision recovered-20261012 --local-dir RelMLLM-8B
-# Use --model ./RelMLLM-8B for inference with this fixed local version.
+python inference.py --model models/RelMLLM-8B --task grounding \
+  --rgb /path/to/rgb.jpg --tir /path/to/tir.jpg --query "the person crossing the street"
 ```
 
-The same release tag is available for RelMLLM-4B.
+Add `--pixel-bbox` for original-image coordinates. `--task vqa` supports generic
+yes/no questions; use the benchmark scripts below for reported VQA scores.
 
-### Complete Archived Results
+## Datasets
 
-Percentages below distinguish recovered results from the paper. They are not
-a claim of exact reproduction of every paper number.
+| Dataset | Download | Evaluation input |
+|---|---|---|
+| RGBT-GroundBench | [Official repository](https://github.com/crazyxiaoxi/RGBT-GroundBench), [images and annotations](https://huggingface.co/datasets/JiawenXi/RGBT-Ground-Dataset) | JSON manifest, 10,124 queries |
+| RGB-Th-Bench | [Paper](https://arxiv.org/abs/2503.19654), [author-linked archive](https://drive.google.com/file/d/1aNaKYpI0lirhDUm34eq6PChA0pmjoXUD/view?usp=sharing) | Extracted `questions.json` files, 1,856 queries |
+| DV-1K-Balanced | [DualVision annotations](https://github.com/abrarmajeedi/DualVision/tree/main/data/v1), [LLVIP](https://bupt-ai-cz.github.io/LLVIP/), [HDRT access](https://www.sciencedirect.com/science/article/abs/pii/S1566253525001824) | Custom mixed-answer JSONL, 1,000 queries |
+| Degraded-1K | GroundBench-derived custom cache; no standalone download yet | Grounding JSON manifest, 1,000 queries |
+
+See [DATASETS.md](DATASETS.md) for direct archive links, split definitions and
+availability limits. Download third-party data under its original license.
+The exact GroundBench converter, DV-1K selector and Degraded-1K corruption/cache
+release remain outstanding; arbitrary substitutes do not reproduce the table.
+
+### Grounding Manifest
+
+Prepare a JSON list using your local image paths and pixel-coordinate GT:
+
+```json
+[{"sample_id":"example-1","images":["/data/rgb.jpg","/data/tir.jpg"],
+  "query":"the person","target_bbox":[10,20,100,200],"expected_modality":"Both"}]
+```
+
+### Evaluation Commands
+
+```bash
+python tools/evaluate_grounding.py --model models/RelMLLM-8B \
+  --eval-json /data/groundbench.json --batch-size 1 --max-new-tokens 256 \
+  --output-jsonl outputs/groundbench.jsonl --summary-json outputs/groundbench_summary.json
+
+python tools/evaluate_rgbth.py --model_name_or_path models/RelMLLM-8B \
+  --dataset_root /data/RGB-Th-Bench --bf16 --max_new_tokens 8 \
+  --results_jsonl outputs/rgbth.jsonl --output_report outputs/rgbth.md
+
+python tools/evaluate_dv1k.py --model_name_or_path models/RelMLLM-8B \
+  --input_jsonl /data/dv1k.jsonl --bf16 --max_new_tokens 32 \
+  --results_jsonl outputs/dv1k.jsonl --output_report outputs/dv1k.md
+```
+
+Use the grounding command with the degraded manifest for Degraded-1K. Existing
+prediction files are not overwritten; use a new output path or explicitly resume.
+
+All benchmarks use BF16, batch 1 and greedy decoding. Grounding uses native
+positions; both VQA evaluators use paired M-RoPE and a 10-second generation time
+limit, which can depend on hardware. Grounding extracts embedded/fenced JSON;
+legacy `format_ok` checks box ordering, not strict geometric validity. RGB-Th
+QAcc averages skills within each data type, then averages the two data types.
+DV-1K includes counts and uses the reference answer to choose the answer-type
+prompt; this archived convention is not a GT-blind deployment procedure.
+
+### Released Checkpoint Results
+
+Complete archived results, percentages:
 
 | Model | GroundBench Acc@0.5 | RGB-Th macro QAcc | Degraded-1K Acc@0.5 | DV-1K Acc |
 |---|---:|---:|---:|---:|
@@ -34,137 +92,54 @@ a claim of exact reproduction of every paper number.
 | 4B paper | 72.3627 | 75.46 | 48.70 | 79.30 |
 | 8B paper | 73.3011 | 75.61 | 61.10 | 78.30 |
 
-### Dataset Downloads
+These author-approved recovered weights are not an exact reproduction of every
+paper number. The Degraded-1K differences are +5.50 / -1.30 points; their cause
+has not been established. Custom input availability also limits independent
+reproduction of these archived scores.
 
-| Dataset | Official access |
-|---|---|
-| RGBT-GroundBench (10,124 queries) | [Code](https://github.com/crazyxiaoxi/RGBT-GroundBench), [images/annotations](https://huggingface.co/datasets/JiawenXi/RGBT-Ground-Dataset) |
-| RGB-Th-Bench (1,856 queries) | [Paper](https://arxiv.org/abs/2503.19654), [author-linked archive](https://drive.google.com/file/d/1aNaKYpI0lirhDUm34eq6PChA0pmjoXUD/view?usp=sharing) |
-| DV-1K-Balanced | Derived from [DualVision v1](https://github.com/abrarmajeedi/DualVision/tree/main/data/v1), [LLVIP](https://bupt-ai-cz.github.io/LLVIP/), [HDRT](https://www.sciencedirect.com/science/article/abs/pii/S1566253525001824) |
-| Degraded-1K | GroundBench-derived cache; standalone archive not yet supplied |
+## Training
 
-[DATASETS.md](DATASETS.md) gives downloads and remaining exact custom-selector/cache
-availability gaps. No third-party images/annotations are redistributed here.
-Independent public reconstruction of custom sets is not yet complete.
+`train.py` adapts the historical relation-SFT trainer, with input validation and
+assistant-only loss. It uses paired M-RoPE and all-linear LoRA. It is a runnable
+SFT component, **not the complete recipe that produced the released checkpoints**.
+The historical training-data construction and complete post-training settings
+are not yet packaged. The settings below are script defaults, not a verified
+paper-training recipe. No later coordinate-binding adapters are used here.
 
-### Benchmark Evaluation
+Supply training and held-out validation JSONL files, one conversation per line:
 
-```bash
-pip install -r requirements-eval.txt
-python tools/evaluate_grounding.py --model /path/to/RelMLLM-8B \
-  --eval-json /path/to/grounding_manifest.json --batch-size 1 \
-  --max-new-tokens 256 --output-jsonl outputs/grounding.jsonl \
-  --summary-json outputs/grounding_summary.json
-python tools/evaluate_rgbth.py --model_name_or_path /path/to/RelMLLM-8B \
-  --dataset_root /path/to/RGB-Th-Bench --bf16 --max_new_tokens 8 \
-  --results_jsonl outputs/rgbth.jsonl --output_report outputs/rgbth.md
-python tools/evaluate_dv1k.py --model_name_or_path /path/to/RelMLLM-8B \
-  --input_jsonl /path/to/dv1k_manifest.jsonl --bf16 --max_new_tokens 32 \
-  --results_jsonl outputs/dv1k.jsonl --output_report outputs/dv1k.md
+```json
+{"images":["images/rgb.jpg","images/tir.jpg"],"messages":[{"role":"system","content":"Return strict JSON only."},{"role":"user","content":"Locate the person. Return a bbox normalized to 0..1000."},{"role":"assistant","content":"{\"bbox\":[100,200,300,800]}"}]}
 ```
 
-[REPRODUCIBILITY.md](REPRODUCIBILITY.md) records benchmark-specific prompts,
-scoring and token caps. The generic yes/no VQA example below is not the DV-1K
-mixed-answer evaluator. RGB-Th macro QAcc is not micro accuracy.
-
-Official inference release for **Beyond Paired Inputs: Learning to Leverage
-RGB-T Cross-Modal Relations in Multimodal Large Language Models**.
-
-RelMLLM takes an aligned RGB image and thermal-infrared (TIR) image and emits
-a structured evidence-relation-decision record. The release supports referring
-grounding and yes/no visual question answering (VQA).
-
-## Release scope
-
-This repository provides:
-
-- merged RelMLLM-4B and RelMLLM-8B checkpoints;
-- a standalone inference entry point;
-- the structured prompts and output schemas used by the released models;
-- an optional aligned RGB-T M-RoPE patch used during post-training;
-- model and license documentation.
-
-Training data, annotations, and training code are not part of this release.
-The datasets used in the paper remain subject to their original licenses.
-
-## Installation
+Image paths are absolute or relative to the JSONL file. Replace the example
+messages with your actual relation-supervision conversations and targets; the
+example defines the file format, not the historical 5K supervision. Keep
+validation images separate from training images. Check the inputs without loading
+the model, then train from the matching Qwen3-VL base:
 
 ```bash
-conda create -n relmllm python=3.10 -y
-conda activate relmllm
-pip install -r requirements.txt
+python train.py --train_jsonl /data/train.jsonl --eval_jsonl /data/val.jsonl \
+  --output_dir outputs/sft --dry_run
+
+python train.py --model_name_or_path Qwen/Qwen3-VL-8B-Instruct \
+  --train_jsonl /data/train.jsonl --eval_jsonl /data/val.jsonl \
+  --output_dir outputs/sft --bf16 --gradient_checkpointing \
+  --max_steps 120 --learning_rate 1e-5 --gradient_accumulation_steps 4 \
+  --lora_r 8 --lora_alpha 16 --seed 42 --merge_output_dir outputs/merged
 ```
 
-The tested environment used PyTorch 2.10.0, Transformers 5.4.0,
-Accelerate 1.13.0, Safetensors 0.7.0, and Pillow 12.2.0.
-For the recovered evaluation environment, install
-`pip install -r requirements-reproduction.txt` instead of the broad dependency
-ranges. Select a PyTorch build compatible with your CUDA/driver installation.
+For 4B use `Qwen/Qwen3-VL-4B-Instruct`. The trainer saves a LoRA adapter in
+`outputs/sft/final_model`; the optional single-process merge exports a standalone
+model to `outputs/merged`. Evaluate it with the commands above, changing the
+model path. Nonempty output directories are refused unless explicitly resuming
+training. Run `python train.py --help` for all settings.
 
-## RGB-T grounding
-
-The RGB image must be passed first and the aligned TIR image second.
+## Tests and License
 
 ```bash
-python inference.py \
-  --model tyy1850819840/RelMLLM-8B \
-  --task grounding \
-  --rgb examples/rgb.jpg \
-  --tir examples/tir.jpg \
-  --query "the person crossing the street"
+python -m unittest discover -s tests -v
 ```
 
-The predicted bounding box uses the Qwen-style coordinate frame
-`[x1, y1, x2, y2]` normalized to `[0, 1000]`. To also print image-pixel
-coordinates, add `--pixel-bbox`.
-
-## RGB-T VQA
-
-```bash
-python inference.py \
-  --model tyy1850819840/RelMLLM-8B \
-  --task vqa \
-  --rgb examples/rgb.jpg \
-  --tir examples/tir.jpg \
-  --query "Is a pedestrian visible in both observations?"
-```
-
-The VQA interface is intended for binary questions. Paper-matched mode returns
-`Yes` or `No`; relation-state mode returns the answer inside structured JSON.
-
-## Important protocol details
-
-1. Inputs must be aligned observations of the same scene.
-2. Input order is fixed: RGB first, TIR second.
-3. Deterministic decoding is used by default (`do_sample=False`).
-4. Grounding coordinates are normalized to `[0, 1000]` for one image, not a
-   horizontally concatenated RGB-T canvas.
-5. The default `--prompt-mode paper` selects the generic interface:
-   relation-state JSON for grounding and direct Yes/No output for VQA.
-6. `--aligned-rope auto` reproduces the reported evaluation code: disabled for
-   grounding and enabled for VQA. Use `on` or `off` for controlled studies.
-
-To request a structured relation-state trajectory for VQA, add
-`--prompt-mode relation-state`.
-
-## Output semantics
-
-- `rgb_reliability`, `tir_reliability`: task-conditioned evidence utility,
-  not physical sensor-health estimates;
-- `relation`: one of `consistent`, `complementary`, `conflict`, `uncertain`;
-- `dominant_modality`: one of `RGB`, `TIR`, `Both`, `None`;
-- `steps`: a machine-checkable evidence-relation-decision record.
-
-See [MODEL_CARD.md](MODEL_CARD.md) for limitations and benchmark results.
-
-## License
-
-The code and released derivative weights are provided under Apache-2.0. The
-release derives from Qwen3-VL-Instruct, also licensed under Apache-2.0. See
-[LICENSE](LICENSE) and [NOTICE](NOTICE). Users remain responsible for complying
-with the licenses of any input datasets and downstream applications.
-
-## Citation
-
-Please cite the paper if this release is useful. Full bibliographic metadata
-will be added after the public paper record is available.
+Code: Apache-2.0, see [LICENSE](LICENSE) and [NOTICE](NOTICE). The Qwen3-VL
+derivative weights and input datasets retain their applicable upstream terms.
