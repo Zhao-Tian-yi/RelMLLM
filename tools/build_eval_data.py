@@ -49,7 +49,7 @@ def replace_queries(rows,patches,dataset,to_archived=False):
 
 def degraded(args):
     release=Path(args.release_root)
-    rows=read(release/'data/degraded_v2.json')
+    rows=read_degraded_annotations(release)
     if args.version=='v1-archived-queries':
         rows=replace_queries(rows,read(release/'query_patches_v2.json'),'degraded',True)
     else:
@@ -67,10 +67,17 @@ def degraded(args):
         w,h=r['image_size'];x1,y1,x2,y2=r['target_bbox']
         if not(0<=x1<x2<=w and 0<=y1<y2<=h):
             raise ValueError('Invalid pixel target box: '+r['sample_id'])
-        r['dataset_version']=args.version
+        r['dataset_version']='degraded-1k-evaluation' if args.version in ['evaluation','v2-quality-screening'] else args.version
     counts=[sum(r['degradation']==c for r in rows) for c in ['rgb_degraded','tir_degraded','both_degraded']]
     if counts!=[333,333,334]:raise ValueError('Wrong corruption-partition counts')
     return rows
+
+
+def read_degraded_annotations(release):
+    release=Path(release)
+    path=release/'data/degraded.json'
+    if not path.is_file():path=release/'data/degraded_v2.json'
+    return read(path)
 
 
 def dv_pair(root,image,dataset=None):
@@ -126,7 +133,7 @@ def main():
     p.add_argument('--image-root',help='Local licensed image root; Degraded also requires the original cache')
     p.add_argument('--groundbench',help='Existing normalized10124-row GroundBench JSON, not raw upstream archives')
     p.add_argument('--train');p.add_argument('--dv500')
-    p.add_argument('--version',choices=['v2-quality-screening','v1-archived-queries'],default='v2-quality-screening')
+    p.add_argument('--version',choices=['evaluation','v2-quality-screening','v1-archived-queries'],default='evaluation')
     p.add_argument('--ir-only',action='store_true',help='Export added500 examples only; not the full DV-1K benchmark')
     p.add_argument('--output');p.add_argument('--check-only',action='store_true')
     args=p.parse_args()
@@ -134,7 +141,7 @@ def main():
     if args.dataset=='dv1k' and not(args.train and args.dv500):p.error('--train and --dv500 are required')
     if args.dataset=='groundbench-v2' and not args.groundbench:p.error('--groundbench is required')
     if args.dataset!='dv1k' and args.ir_only:p.error('--ir-only applies only to DV')
-    if args.dataset!='degraded' and args.version!='v2-quality-screening':p.error('--version applies only to Degraded')
+    if args.dataset!='degraded' and args.version not in ['evaluation','v2-quality-screening']:p.error('--version applies only to Degraded')
     if not args.check_only and not args.output:p.error('--output is required unless --check-only')
     if args.output and Path(args.output).exists():p.error('Output exists; choose a new file')
     rows={'degraded':degraded,'dv1k':dv1k,'groundbench-v2':groundbench}[args.dataset](args)

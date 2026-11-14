@@ -79,11 +79,10 @@ type. That archived convention is not a ground-truth-blind deployment protocol.
 
 ## Degraded-1K
 
-The [public v2 release](https://huggingface.co/datasets/tyy1850819840/RelMLLM-Degraded-1K)
-contains333 RGB-degraded,333 TIR-degraded and334 jointly degraded queries,
-source IDs and17 approved query corrections. GT/IDs/image references are
-unchanged; the ambiguous legacy `degradation_type` and synthetic state metadata
-are omitted. Synthetic relation metadata are not outcome-derived references.
+The [evaluation set](https://huggingface.co/datasets/tyy1850819840/RelMLLM-Degraded-1K)
+contains333 RGB-degraded,333 TIR-degraded and334 jointly degraded queries.
+`data/degraded.json` contains query text, pixel xyxy GT, dimensions, original
+and evaluated RGB/TIR image paths, degradation condition and source sample ID.
 
 The original counterparts are included:414 FLIR,642 M3FD and854 MFAD files
 (1,910 files,955 unique RGB/TIR pairs; multiple queries can share one pair).
@@ -102,7 +101,7 @@ assets/degraded/{rgb_degraded,tir_degraded,both_degraded}/{rgb,tir}/...
 ```
 
 ```bash
-hf download tyy1850819840/RelMLLM-Degraded-1K --repo-type dataset --revision v2-quality-screening-complete-20261115 --local-dir data/degraded1k
+hf download tyy1850819840/RelMLLM-Degraded-1K --repo-type dataset --revision eval-20261115 --local-dir data/degraded1k
 mkdir -p /data/assets
 python -m zipfile -e data/degraded1k/images/clean-flir.zip /data/assets
 python -m zipfile -e data/degraded1k/images/clean-m3fd.zip /data/assets
@@ -111,30 +110,12 @@ python -m zipfile -e data/degraded1k/images/degraded-flir.zip /data/assets
 python -m zipfile -e data/degraded1k/images/degraded-m3fd.zip /data/assets
 python -m zipfile -e data/degraded1k/images/degraded-mfad.zip /data/assets
 python tools/build_eval_data.py degraded --release-root data/degraded1k \
-  --image-root /data/assets --output /data/degraded-v2.json
-bash scripts/evaluate.sh degraded models/RelMLLM-8B /data/degraded-v2.json outputs/degraded-v2
+  --image-root /data/assets --output /data/degraded.json
+bash scripts/evaluate.sh degraded models/RelMLLM-8B /data/degraded.json outputs/degraded
 ```
 
 All six archives extract under `/data/assets`; no historical local path or symlink is required.
-The earlier annotation-only and degraded-cache version tags remain unchanged.
 The builder checks all1,000 IDs, image files, RGB dimensions, pixel GT and
 333/333/334 partition counts. `--check-only` validates without writing outputs.
-`--version v1-archived-queries` restores old query strings with known defects
-(including target-coordinate-bearing queries), only for disclosed historical
-comparisons. The default is corrected v2.
-
-To synchronize the same17 query edits to an existing **normalized** GroundBench
-JSON with10,124 original source IDs (not directly to upstream tar archives):
-
-```bash
-python tools/build_eval_data.py groundbench-v2 --release-root data/degraded1k \
-  --groundbench /data/groundbench-v1.json --output /data/groundbench-v2.json
-```
-
-Only query fields are patched; unexpected text, nonempty prompts or missing
-source IDs stop the operation. Input files are not overwritten. Full GroundBench
-conversion from upstream packaging remains a separate prerequisite.
-
-All1,000 Degraded examples received agent-assisted visual screening, not full
-human expert certification; ambiguous cases remain. Historical paper/recovered
-scores are not new v2 measurements. Report weight/data versions with every score.
+Input files are not overwritten. Report the actual weights and evaluation inputs
+used for each score. Full GroundBench preparation remains a separate prerequisite.

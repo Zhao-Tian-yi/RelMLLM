@@ -50,6 +50,25 @@ class EvalDataBuilderTests(unittest.TestCase):
             path.write_text('{"n":1}\n{"n":2}\n',encoding='utf-8')
             self.assertEqual(b.read(path),[{'n':1},{'n':2}])
 
+    def test_evaluation_annotation_filename(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            data=Path(tmp)/'data';data.mkdir()
+            (data/'degraded.json').write_text(json.dumps(self.rows),encoding='utf-8')
+            self.assertEqual(b.read_degraded_annotations(tmp),self.rows)
+
+    def test_legacy_annotation_filename_remains_readable(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            data=Path(tmp)/'data';data.mkdir()
+            (data/'degraded_v2.json').write_text(json.dumps(self.rows),encoding='utf-8')
+            self.assertEqual(b.read_degraded_annotations(tmp),self.rows)
+
+    def test_evaluation_annotation_filename_preferred(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            data=Path(tmp)/'data';data.mkdir()
+            (data/'degraded.json').write_text(json.dumps(self.rows),encoding='utf-8')
+            (data/'degraded_v2.json').write_text('[]',encoding='utf-8')
+            self.assertEqual(b.read_degraded_annotations(tmp),self.rows)
+
     def test_unsafe_paths_rejected(self):
         with tempfile.TemporaryDirectory() as tmp:
             for path in ['../escape.jpg','/absolute.jpg','C:/absolute.jpg']:

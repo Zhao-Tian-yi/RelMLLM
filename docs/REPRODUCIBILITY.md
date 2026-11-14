@@ -39,18 +39,19 @@ yes/no questions; use the benchmark scripts below for reported VQA scores.
 | RGBT-GroundBench | [Official repository](https://github.com/crazyxiaoxi/RGBT-GroundBench), [images and annotations](https://huggingface.co/datasets/JiawenXi/RGBT-Ground-Dataset) | JSON manifest, 10,124 queries |
 | RGB-Th-Bench | [Paper](https://arxiv.org/abs/2503.19654), [author-linked archive](https://drive.google.com/file/d/1aNaKYpI0lirhDUm34eq6PChA0pmjoXUD/view?usp=sharing) | Extracted `questions.json` files, 1,856 queries |
 | DV-1K-Balanced | [DualVision annotations](https://github.com/abrarmajeedi/DualVision/tree/main/data/v1), [LLVIP](https://bupt-ai-cz.github.io/LLVIP/), [HDRT access](https://www.sciencedirect.com/science/article/abs/pii/S1566253525001824) | Custom mixed-answer JSONL, 1,000 queries |
-| Degraded-1K | [Corrected annotations, selected original pairs and degraded cache](https://huggingface.co/datasets/tyy1850819840/RelMLLM-Degraded-1K) | Grounding JSON manifest, 1,000 queries |
+| Degraded-1K | [Evaluation annotations, original pairs and degraded cache](https://huggingface.co/datasets/tyy1850819840/RelMLLM-Degraded-1K) | Grounding JSON manifest, 1,000 queries |
 
 See [DATASETS.md](../DATASETS.md) for direct archive links, split definitions and
 availability limits. Download third-party data under its original license.
-The exact added DV IR500 selector and complete selected Degraded v2 assets are
+The exact added DV IR500 selector and Degraded-1K evaluation annotations and images are
 public on HF, with `tools/build_eval_data.py` preparation commands in DATASETS.md.
 We do not mirror original RGB DV500, full GroundBench, RGB-Th, DV QA text
 or unrelated upstream images. Degraded includes1,910 original RGB/TIR files
 and1,334 retained corrupted files, mapped by the1,000 annotations; its exact
 corruption generator remains unavailable. Upstream image redistribution rights
 have not been independently cleared; consult the HF rights notice. Arbitrary
-new corruptions are not equivalent. Historical scores below are not v2 measurements.
+new corruptions are not equivalent. Scores must be associated with the actual
+weights and evaluation inputs used.
 
 ### Grounding Manifest
 

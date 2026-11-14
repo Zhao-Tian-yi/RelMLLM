@@ -21,11 +21,11 @@ Our evaluation additions are on Hugging Face:
 
 | Addition | Download | Contents |
 |---|---|---|
-| Degraded-1K v2 | [HF dataset](https://huggingface.co/datasets/tyy1850819840/RelMLLM-Degraded-1K) | 1,000 annotations,1,910 original RGB/TIR images and1,334 degraded images |
+| Degraded-1K | [HF dataset](https://huggingface.co/datasets/tyy1850819840/RelMLLM-Degraded-1K) | 1,000 evaluation annotations,1,910 original RGB/TIR images and1,334 degraded images |
 | DV-1K TIR-500 | [HF dataset](https://huggingface.co/datasets/tyy1850819840/RelMLLM-DV-TIR-500) | Exact500-example IR selector; combine with upstream DV500 |
 
 ```bash
-hf download tyy1850819840/RelMLLM-Degraded-1K --repo-type dataset --revision v2-quality-screening-complete-20261115 --local-dir data/degraded1k
+hf download tyy1850819840/RelMLLM-Degraded-1K --repo-type dataset --revision eval-20261115 --local-dir data/degraded1k
 hf download tyy1850819840/RelMLLM-DV-TIR-500 --repo-type dataset --revision v1-selected-20261115 --local-dir data/dv-tir500
 ```
 
@@ -66,6 +66,6 @@ The [agent skill](skills/relmllm-reproduce/SKILL.md) is a repository-local instr
 
 ## Reproduction Status
 
-Released weights are the author-approved recovered version, **not an exact match to every paper score**. The DV selector and complete selected Degraded v2 assets are public; historical scores are **not v2 measurements**. Other benchmarks' upstream assets, GroundBench conversion and historical training provenance still limit exact reproduction. Default RL batch is1 per device, while the manuscript reports2; epoch/step equivalence depends on batch and generation settings. See [Reproduction Details](docs/REPRODUCIBILITY.md).
+Released weights are the author-approved recovered version, **not an exact match to every paper score**. The DV selector and Degraded-1K evaluation annotations and images are public. Report scores for the actual weights and inputs evaluated. Other benchmarks' upstream assets, GroundBench conversion and historical training provenance still limit exact reproduction. Default RL batch is1 per device, while the manuscript reports2; epoch/step equivalence depends on batch and generation settings. See [Reproduction Details](docs/REPRODUCIBILITY.md).
 
 Tests: `python -m unittest discover -s tests -v`. Code: [Apache-2.0](LICENSE); upstream model and dataset terms apply.
