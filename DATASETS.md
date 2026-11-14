@@ -1,10 +1,10 @@
 # Dataset Downloads and Reproduction Limits
 
 Download images and source annotations from their original maintainers under
-their terms. Our [Degraded-1K annotations and retained cache](https://huggingface.co/datasets/tyy1850819840/RelMLLM-Degraded-1K)
+their terms. Our [Degraded-1K annotations, selected original pairs and retained cache](https://huggingface.co/datasets/tyy1850819840/RelMLLM-Degraded-1K)
 and [DV TIR-500 selector](https://huggingface.co/datasets/tyy1850819840/RelMLLM-DV-TIR-500)
-are on HF. Only the selected degraded cache is mirrored, not clean benchmark
-images, upstream DV QA text, full GroundBench, RGB-Th or original DV500.
+are on HF. Only Degraded's selected original/degraded images are mirrored, not
+unrelated upstream images, upstream DV QA text, full GroundBench, RGB-Th or original DV500.
 The code licence does not relicense upstream data; see the
 [unresolved image-rights notice](https://huggingface.co/datasets/tyy1850819840/RelMLLM-Degraded-1K/blob/main/IMAGE_RIGHTS.md).
 
@@ -85,9 +85,12 @@ source IDs and17 approved query corrections. GT/IDs/image references are
 unchanged; the ambiguous legacy `degradation_type` and synthetic state metadata
 are omitted. Synthetic relation metadata are not outcome-derived references.
 
-The retained evaluated cache is included as three archives:281 FLIR,454 M3FD
-and599 MFAD files (1,334 total;877.3 MiB of image data). Clean counterparts
-come from GroundBench. Original corruption parameters and random-state traces
+The original counterparts are included:414 FLIR,642 M3FD and854 MFAD files
+(1,910 files,955 unique RGB/TIR pairs; multiple queries can share one pair).
+The retained degraded cache adds281/454/599 files (1,334 total).
+Every record maps GT/query to original `clean_images` and evaluated `images`;
+these selected1,000 queries need no separate upstream image download.
+Original corruption parameters and random-state traces
 have not been fully recovered; use these retained bytes, not approximate new
 corruptions. Upstream image rights remain unresolved, not newly relicensed.
 
@@ -99,8 +102,11 @@ assets/degraded/{rgb_degraded,tir_degraded,both_degraded}/{rgb,tir}/...
 ```
 
 ```bash
-hf download tyy1850819840/RelMLLM-Degraded-1K --repo-type dataset --revision v2-quality-screening-images-20261115 --local-dir data/degraded1k
+hf download tyy1850819840/RelMLLM-Degraded-1K --repo-type dataset --revision v2-quality-screening-complete-20261115 --local-dir data/degraded1k
 mkdir -p /data/assets
+python -m zipfile -e data/degraded1k/images/clean-flir.zip /data/assets
+python -m zipfile -e data/degraded1k/images/clean-m3fd.zip /data/assets
+python -m zipfile -e data/degraded1k/images/clean-mfad.zip /data/assets
 python -m zipfile -e data/degraded1k/images/degraded-flir.zip /data/assets
 python -m zipfile -e data/degraded1k/images/degraded-m3fd.zip /data/assets
 python -m zipfile -e data/degraded1k/images/degraded-mfad.zip /data/assets
@@ -109,8 +115,8 @@ python tools/build_eval_data.py degraded --release-root data/degraded1k \
 bash scripts/evaluate.sh degraded models/RelMLLM-8B /data/degraded-v2.json outputs/degraded-v2
 ```
 
-Place clean source images under `/data/assets/clean` before running the builder.
-The earlier annotation-only tag `v2-quality-screening-20261115` remains unchanged.
+All six archives extract under `/data/assets`; no historical local path or symlink is required.
+The earlier annotation-only and degraded-cache version tags remain unchanged.
 The builder checks all1,000 IDs, image files, RGB dimensions, pixel GT and
 333/333/334 partition counts. `--check-only` validates without writing outputs.
 `--version v1-archived-queries` restores old query strings with known defects
