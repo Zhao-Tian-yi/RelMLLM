@@ -17,7 +17,22 @@ Weights: [4B](https://huggingface.co/tyy1850819840/RelMLLM-4B) / [8B](https://hu
 
 ## Evaluate
 
-Download and prepare inputs using [DATASETS.md](DATASETS.md): [GroundBench](https://huggingface.co/datasets/JiawenXi/RGBT-Ground-Dataset), [RGB-Th-Bench](https://drive.google.com/file/d/1aNaKYpI0lirhDUm34eq6PChA0pmjoXUD/view?usp=sharing), and [DV source annotations](https://github.com/abrarmajeedi/DualVision/tree/main/data/v1).
+Our evaluation additions are on Hugging Face:
+
+| Addition | Download | Contents |
+|---|---|---|
+| Degraded-1K v2 | [HF dataset](https://huggingface.co/datasets/tyy1850819840/RelMLLM-Degraded-1K) | 1,000 annotations and17 query corrections; **no image cache** |
+| DV-1K TIR-500 | [HF dataset](https://huggingface.co/datasets/tyy1850819840/RelMLLM-DV-TIR-500) | Exact500-example IR selector; combine with upstream DV500 |
+
+```bash
+hf download tyy1850819840/RelMLLM-Degraded-1K --repo-type dataset --revision v2-quality-screening-20261115 --local-dir data/degraded1k
+hf download tyy1850819840/RelMLLM-DV-TIR-500 --repo-type dataset --revision v1-selected-20261115 --local-dir data/dv-tir500
+```
+
+Prepare local inputs with `tools/build_eval_data.py` using [DATASETS.md](DATASETS.md).
+GroundBench, RGB-Th and original DV500 images/annotations are obtained upstream.
+Degraded evaluation still requires the original corruption cache; this metadata
+release does not regenerate it. DV's IR question category still uses paired RGB/TIR inputs.
 
 ```bash
 bash scripts/evaluate.sh groundbench models/RelMLLM-8B /data/groundbench.json outputs/groundbench
@@ -49,6 +64,6 @@ The [agent skill](skills/relmllm-reproduce/SKILL.md) is a repository-local instr
 
 ## Reproduction Status
 
-Released weights are the author-approved recovered version, **not an exact match to every paper score**. Exact DV-1K selection, Degraded-1K cache, GroundBench conversion, and historical training candidates are not fully released. The paper's one-epoch schedule differs from the supplementary 1,250-step launcher. Settings, archived results, and limitations are in [Reproduction Details](docs/REPRODUCIBILITY.md).
+Released weights are the author-approved recovered version, **not an exact match to every paper score**. The DV selector and corrected Degraded annotations are public; historical scores are **not v2 measurements**. Image-cache availability, GroundBench conversion and historical training provenance still limit exact reproduction. Default RL batch is1 per device, while the manuscript reports2; epoch/step equivalence depends on batch and generation settings. See [Reproduction Details](docs/REPRODUCIBILITY.md).
 
 Tests: `python -m unittest discover -s tests -v`. Code: [Apache-2.0](LICENSE); upstream model and dataset terms apply.

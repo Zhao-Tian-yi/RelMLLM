@@ -43,8 +43,12 @@ yes/no questions; use the benchmark scripts below for reported VQA scores.
 
 See [DATASETS.md](../DATASETS.md) for direct archive links, split definitions and
 availability limits. Download third-party data under its original license.
-The exact GroundBench converter, DV-1K selector and Degraded-1K corruption/cache
-release remain outstanding; arbitrary substitutes do not reproduce the table.
+The exact added DV IR500 selector and corrected Degraded v2 annotations are
+public on HF, with `tools/build_eval_data.py` preparation commands in DATASETS.md.
+We do not mirror the original RGB DV500, full GroundBench, RGB-Th, DV QA text
+or image archives. The Degraded image cache and exact corruption generator
+remain unavailable in this release; arbitrary substitutes do not reproduce
+the table. Historical scores below are not v2 measurements.
 
 ### Grounding Manifest
 
@@ -210,9 +214,12 @@ python tools/merge_adapter.py --model Qwen/Qwen3-VL-8B-Instruct \
 For 4B use `Qwen/Qwen3-VL-4B-Instruct` throughout. Evaluate `outputs/merged` with
 the benchmark commands above. Nonempty output directories are protected. RL
 records its configuration in the output directory. `--max_steps` explicitly
-overrides epoch scheduling; the supplementary shell used 1,250 steps, whereas
-the paper states one epoch. They must not be assumed equivalent across batch
-and generation settings. This release defaults to the paper's one epoch.
+overrides epoch scheduling. The default RL launcher uses per-device batch1;
+the manuscript reports2. Accumulation4 and four generations per prompt are
+retained. GRPO/GSPO group sampling affects prompt/update counts, so1,250 steps
+is not inherently inconsistent with5,000 prompts, but equivalence must be
+checked for the actual batch, sampler and trainer. This release defaults to
+one epoch and does not certify recreation of the original run.
 
 The minimal RL implementation preserves the supplementary reward calculations;
 paths, validation, defaults and a historical single-sample multimodal logprob
@@ -222,7 +229,7 @@ state, then final bbox as described in the paper. This prompt correction is not
 claimed identical to the historical training prompt. The upstream TRL revision is fixed in
 `requirements-train.txt`; the compatibility fix is local, not an upstream edit.
 CPU checks do not establish end-to-end retraining equivalence. Exact historical
-data, the step/epoch discrepancy and the full training-to-merged-weight chain
+data, batch/sampler accounting and the full training-to-merged-weight chain
 still need verification before claiming exact recreation of the hosted weights.
 
 ## Tests and License
