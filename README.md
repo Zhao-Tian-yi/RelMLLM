@@ -29,7 +29,7 @@ DV-204K training examples whose original annotations indicate reliance on TIR.
 The selected 500 examples were removed from the training data used for RelMLLM.
 
 ```bash
-hf download tyy1850819840/RelMLLM-Degraded-1K --repo-type dataset --revision eval-20261116 --local-dir data/degraded1k
+hf download tyy1850819840/RelMLLM-Degraded-1K --repo-type dataset --revision eval-20261116-r1 --local-dir data/degraded1k
 hf download tyy1850819840/RelMLLM-DV-TIR-500 --repo-type dataset --revision v1-selected-20261115 --local-dir data/dv-tir500
 ```
 
@@ -44,7 +44,7 @@ DV's IR question category still uses paired RGB/TIR inputs.
 bash scripts/evaluate.sh groundbench models/RelMLLM-8B /data/groundbench.json outputs/groundbench
 bash scripts/evaluate.sh rgbth models/RelMLLM-8B /data/RGB-Th-Bench outputs/rgbth
 bash scripts/evaluate.sh dv1k models/RelMLLM-8B /data/dv1k.jsonl outputs/dv1k
-bash scripts/evaluate.sh degraded models/RelMLLM-8B /data/degraded.json outputs/degraded
+bash scripts/evaluate.sh degraded models/RelMLLM-8B data/degraded.json outputs/degraded
 ```
 
 ## Train

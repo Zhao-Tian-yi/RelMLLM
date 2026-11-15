@@ -103,21 +103,23 @@ assets/clean/{flir,m3fd,mfad}/{rgb,ir}/...
 assets/degraded/{rgb_degraded,tir_degraded,both_degraded}/{rgb,tir}/...
 ```
 
+After the README setup, run from the repository root:
+
 ```bash
-hf download tyy1850819840/RelMLLM-Degraded-1K --repo-type dataset --revision eval-20261116 --local-dir data/degraded1k
-mkdir -p /data/assets
-python -m zipfile -e data/degraded1k/images/clean-flir.zip /data/assets
-python -m zipfile -e data/degraded1k/images/clean-m3fd.zip /data/assets
-python -m zipfile -e data/degraded1k/images/clean-mfad.zip /data/assets
-python -m zipfile -e data/degraded1k/images/degraded-flir.zip /data/assets
-python -m zipfile -e data/degraded1k/images/degraded-m3fd.zip /data/assets
-python -m zipfile -e data/degraded1k/images/degraded-mfad.zip /data/assets
+hf download tyy1850819840/RelMLLM-Degraded-1K --repo-type dataset --revision eval-20261116-r1 --local-dir data/degraded1k
+mkdir -p data/assets
+python -m zipfile -e data/degraded1k/images/clean-flir.zip data/assets
+python -m zipfile -e data/degraded1k/images/clean-m3fd.zip data/assets
+python -m zipfile -e data/degraded1k/images/clean-mfad.zip data/assets
+python -m zipfile -e data/degraded1k/images/degraded-flir.zip data/assets
+python -m zipfile -e data/degraded1k/images/degraded-m3fd.zip data/assets
+python -m zipfile -e data/degraded1k/images/degraded-mfad.zip data/assets
 python tools/build_eval_data.py degraded --release-root data/degraded1k \
-  --image-root /data/assets --output /data/degraded.json
-bash scripts/evaluate.sh degraded models/RelMLLM-8B /data/degraded.json outputs/degraded
+  --image-root data/assets --output data/degraded.json
+bash scripts/evaluate.sh degraded models/RelMLLM-8B data/degraded.json outputs/degraded
 ```
 
-All six archives extract under `/data/assets`; no historical local path or symlink is required.
+All six archives extract under `data/assets`; no root privileges, historical paths or symlinks are required.
 The builder checks all1,000 IDs, image files, RGB dimensions, pixel GT and
 333/333/334 partition counts. `--check-only` validates without writing outputs.
 Input files are not overwritten. Report the actual weights and evaluation inputs

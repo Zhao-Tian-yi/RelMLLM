@@ -23,6 +23,11 @@ from tools.build_relation_data import derive_label
 
 
 class ReleaseTests(unittest.TestCase):
+    def test_visual_runtime_requirements(self):
+        requirements=set((ROOT / 'requirements.txt').read_text().splitlines())
+        self.assertIn('torch==2.10.0', requirements)
+        self.assertIn('torchvision==0.25.0', requirements)
+
     def test_gspo_defaults(self):
         with patch.object(sys, "argv", ["train.py", "--train_json", "train.json",
                                       "--eval_json", "val.json", "--output_dir", "out"]):
