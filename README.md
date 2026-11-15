@@ -24,6 +24,10 @@ Our evaluation additions are on Hugging Face:
 | Degraded-1K | [HF dataset](https://huggingface.co/datasets/tyy1850819840/RelMLLM-Degraded-1K) | 1,000 evaluation annotations,1,910 original RGB/TIR images and1,334 degraded images |
 | DV-1K TIR-500 | [HF dataset](https://huggingface.co/datasets/tyy1850819840/RelMLLM-DV-TIR-500) | Exact500-example IR selector; combine with upstream DV500 |
 
+DV-1K combines the original DV-500 evaluation set with 500 randomly selected
+DV-204K training examples whose original annotations indicate reliance on TIR.
+The selected 500 examples were removed from the training data used for RelMLLM.
+
 ```bash
 hf download tyy1850819840/RelMLLM-Degraded-1K --repo-type dataset --revision eval-20261115 --local-dir data/degraded1k
 hf download tyy1850819840/RelMLLM-DV-TIR-500 --repo-type dataset --revision v1-selected-20261115 --local-dir data/dv-tir500

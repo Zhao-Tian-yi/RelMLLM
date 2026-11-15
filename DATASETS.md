@@ -50,9 +50,12 @@ Use the maintainers' download and licensing instructions, not an unofficial reho
 Expected image roots are `LLVIP/visible`, `LLVIP/infrared`, `HDRT/visible`,
 and `HDRT/infrared` under your local data directory.
 
-The custom 1,000-query set combines 500 DV500 RGB-category examples and 500
-held-out IR-category examples from v1 source data (297 LLVIP / 203 HDRT).
-Archived seed: 20260718, first QA only. It is not the upstream DV500 alone.
+We randomly selected 500 examples from the DV-204K training set whose original
+annotations indicate reliance on TIR evidence, and removed these examples from
+the training data used for RelMLLM. We combined them with the original DV-500
+evaluation set to form the 1,000-example DV-1K evaluation set.
+The selected examples comprise 297 LLVIP and 203 HDRT examples.
+Selection seed: 20260718; first QA only, with original QA text unchanged.
 
 The exact added500-example selector is now [released on HF](https://huggingface.co/datasets/tyy1850819840/RelMLLM-DV-TIR-500).
 It records source rows and image/source IDs, not modified QA text. "TIR" refers
