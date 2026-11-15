@@ -28,8 +28,11 @@ DV-1K combines the original DV-500 evaluation set with 500 randomly selected
 DV-204K training examples whose original annotations indicate reliance on TIR.
 The selected 500 examples were removed from the training data used for RelMLLM.
 
+For Degraded-1K, first submit the [HF access form](https://huggingface.co/datasets/tyy1850819840/RelMLLM-Degraded-1K) (automatic approval), then log in with the same account below. The DV selector requires no application.
+
 ```bash
-hf download tyy1850819840/RelMLLM-Degraded-1K --repo-type dataset --revision eval-20261116-r1 --local-dir data/degraded1k
+hf auth login
+hf download tyy1850819840/RelMLLM-Degraded-1K --repo-type dataset --revision eval-20261116-r2 --local-dir data/degraded1k
 hf download tyy1850819840/RelMLLM-DV-TIR-500 --repo-type dataset --revision v1-selected-20261115 --local-dir data/dv-tir500
 ```
 
