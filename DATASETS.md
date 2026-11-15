@@ -104,7 +104,7 @@ assets/degraded/{rgb_degraded,tir_degraded,both_degraded}/{rgb,tir}/...
 ```
 
 ```bash
-hf download tyy1850819840/RelMLLM-Degraded-1K --repo-type dataset --revision eval-20261115 --local-dir data/degraded1k
+hf download tyy1850819840/RelMLLM-Degraded-1K --repo-type dataset --revision eval-20261116 --local-dir data/degraded1k
 mkdir -p /data/assets
 python -m zipfile -e data/degraded1k/images/clean-flir.zip /data/assets
 python -m zipfile -e data/degraded1k/images/clean-m3fd.zip /data/assets

@@ -29,7 +29,7 @@ DV-204K training examples whose original annotations indicate reliance on TIR.
 The selected 500 examples were removed from the training data used for RelMLLM.
 
 ```bash
-hf download tyy1850819840/RelMLLM-Degraded-1K --repo-type dataset --revision eval-20261115 --local-dir data/degraded1k
+hf download tyy1850819840/RelMLLM-Degraded-1K --repo-type dataset --revision eval-20261116 --local-dir data/degraded1k
 hf download tyy1850819840/RelMLLM-DV-TIR-500 --repo-type dataset --revision v1-selected-20261115 --local-dir data/dv-tir500
 ```
 
